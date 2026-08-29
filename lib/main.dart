@@ -1,3 +1,4 @@
+import 'package:credits_boutique/features/stats/presentation/stats_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/notifications/notification_service.dart';
@@ -38,6 +39,7 @@ class _AccueilNavigationState extends State<AccueilNavigation> {
     PeriodeActiveScreen(),
     CatalogueScreen(),
     HistoriqueScreen(),
+    StatsScreen(),
   ];
 
   @override
@@ -51,6 +53,7 @@ class _AccueilNavigationState extends State<AccueilNavigation> {
           NavigationDestination(icon: Icon(Icons.receipt_long), label: 'Période'),
           NavigationDestination(icon: Icon(Icons.inventory_2_outlined), label: 'Catalogue'),
           NavigationDestination(icon: Icon(Icons.history), label: 'Historique'),
+          NavigationDestination(icon: Icon(Icons.bar_chart), label: 'Stats'),
         ],
       ),
     );

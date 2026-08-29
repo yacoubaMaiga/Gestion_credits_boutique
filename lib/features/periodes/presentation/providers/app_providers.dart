@@ -5,6 +5,8 @@ import '../../../produits/data/produit_repository.dart';
 import '../../../produits/models/produit.dart';
 import '../../../achats/data/achat_repository.dart';
 import '../../../achats/models/achat.dart';
+import '../../../stats/data/stats_repository.dart';
+
 
 // Repositories (une seule instance partagée)
 final periodeRepositoryProvider = Provider((ref) => PeriodeRepository());
@@ -37,4 +39,22 @@ final produitsProvider = FutureProvider<List<Produit>>((ref) {
 
 final historiqueProvider = FutureProvider<List<Periode>>((ref) {
   return ref.watch(periodeRepositoryProvider).getHistorique();
+});
+
+final statsRepositoryProvider = Provider((ref) => StatsRepository());
+
+final montantsParPeriodeProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(statsRepositoryProvider).getMontantsParPeriode();
+});
+
+final produitsFrequentsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(statsRepositoryProvider).getProduitsPlusFrequents();
+});
+
+final produitsCouteuxProvider = FutureProvider<List<Map<String, dynamic>>>((ref) {
+  return ref.watch(statsRepositoryProvider).getProduitsPlusCouteux();
+});
+
+final moyennePeriodesProvider = FutureProvider<int>((ref) {
+  return ref.watch(statsRepositoryProvider).getMoyennePeriodesPayees();
 });
