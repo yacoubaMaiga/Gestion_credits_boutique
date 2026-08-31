@@ -108,6 +108,10 @@ class PeriodeActiveScreen extends ConsumerWidget {
     await NotificationService.instance.annulerRappels(periodeId);
     ref.invalidate(periodeActiveProvider);
     ref.invalidate(historiqueProvider);
+    ref.invalidate(montantsParPeriodeProvider); // <- ajouté
+    ref.invalidate(moyennePeriodesProvider); // <- ajouté
+    ref.invalidate(produitsFrequentsProvider); // <- ajouté
+    ref.invalidate(produitsCouteuxProvider); // <- ajouté
 
     if (montantPaye < montantTotal && context.mounted) {
       final reste = montantTotal - montantPaye;
