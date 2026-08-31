@@ -18,27 +18,37 @@ class StatsRepository {
   }
 
   /// Produits les plus achetés, toutes périodes confondues (par fréquence d'achat)
-  Future<List<Map<String, dynamic>>> getProduitsPlusFrequents({int limite = 5}) async {
+  Future<List<Map<String, dynamic>>> getProduitsPlusFrequents({
+    int limite = 5,
+  }) async {
     final db = await _db.database;
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT nom_produit, COUNT(*) as nb_achats, SUM(quantite) as quantite_totale
       FROM achat
       GROUP BY nom_produit
       ORDER BY nb_achats DESC
       LIMIT ?
-    ''', [limite]);
+    ''',
+      [limite],
+    );
   }
 
   /// Produits qui représentent le plus gros poste de dépense (montant cumulé)
-  Future<List<Map<String, dynamic>>> getProduitsPlusCouteux({int limite = 5}) async {
+  Future<List<Map<String, dynamic>>> getProduitsPlusCouteux({
+    int limite = 5,
+  }) async {
     final db = await _db.database;
-    return await db.rawQuery('''
+    return await db.rawQuery(
+      '''
       SELECT nom_produit, SUM(prix * quantite) as montant_total
       FROM achat
       GROUP BY nom_produit
       ORDER BY montant_total DESC
       LIMIT ?
-    ''', [limite]);
+    ''',
+      [limite],
+    );
   }
 
   /// Moyenne des montants totaux des périodes déjà payées (pour comparaison)
@@ -54,5 +64,15 @@ class StatsRepository {
       )
     ''');
     return ((result.first['moyenne'] as num?) ?? 0).round();
+  }
+
+  /// Somme de toutes les dépenses enregistrées, toutes périodes confondues
+  /// (utilisé pour calculer le poids relatif d'un produit dans les dépenses totales)
+  Future<int> getTotalDepenseGenerale() async {
+    final db = await _db.database;
+    final result = await db.rawQuery(
+      'SELECT SUM(prix * quantite) as total FROM achat',
+    );
+    return ((result.first['total'] as num?) ?? 0).round();
   }
 }

@@ -58,3 +58,7 @@ final produitsCouteuxProvider = FutureProvider<List<Map<String, dynamic>>>((ref)
 final moyennePeriodesProvider = FutureProvider<int>((ref) {
   return ref.watch(statsRepositoryProvider).getMoyennePeriodesPayees();
 });
+
+final totalDepenseGeneraleProvider = FutureProvider<int>((ref) {
+  return ref.watch(statsRepositoryProvider).getTotalDepenseGenerale();
+});

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 import '../../periodes/presentation/providers/app_providers.dart';
+import '../domain/recommandations.dart';
+
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
@@ -17,6 +19,7 @@ class StatsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: const [
+          _Recommandations(),
           _ComparaisonMoyenne(),
           SizedBox(height: 24),
           _GraphiqueEvolution(),
@@ -220,6 +223,65 @@ class _TopProduits extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _Recommandations extends ConsumerWidget {
+  const _Recommandations();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final periodeActiveAsync = ref.watch(periodeActiveProvider);
+    final moyenneAsync = ref.watch(moyennePeriodesProvider);
+    final produitsCouteuxAsync = ref.watch(produitsCouteuxProvider);
+    final totalGeneralAsync = ref.watch(totalDepenseGeneraleProvider);
+
+    // On a besoin des 4 valeurs en même temps, donc on vérifie qu'elles sont toutes chargées
+    if (!periodeActiveAsync.hasValue ||
+        !moyenneAsync.hasValue ||
+        !produitsCouteuxAsync.hasValue ||
+        !totalGeneralAsync.hasValue) {
+      return const SizedBox.shrink();
+    }
+
+    final periode = periodeActiveAsync.value;
+    if (periode == null) return const SizedBox.shrink();
+
+    return FutureBuilder<int>(
+      future: ref.read(montantTotalProvider(periode.id!).future),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return const SizedBox.shrink();
+
+        final messages = Recommandations.generer(
+          montantActuel: snapshot.data!,
+          moyennePeriodes: moyenneAsync.value!,
+          produitsCouteux: produitsCouteuxAsync.value!,
+          totalDepenseGenerale: totalGeneralAsync.value!,
+        );
+
+        if (messages.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: messages
+              .map((msg) => Card(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Icon(Icons.lightbulb_outline, color: Theme.of(context).colorScheme.onSecondaryContainer),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(msg)),
+                        ],
+                      ),
+                    ),
+                  ))
+              .toList(),
+        );
+      },
     );
   }
 }
