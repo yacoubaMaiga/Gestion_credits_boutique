@@ -6,7 +6,7 @@ import '../../../produits/models/produit.dart';
 import '../../../achats/data/achat_repository.dart';
 import '../../../achats/models/achat.dart';
 import '../../../stats/data/stats_repository.dart';
-
+import '../../../export/data/export_service.dart';
 
 // Repositories (une seule instance partagée)
 final periodeRepositoryProvider = Provider((ref) => PeriodeRepository());
@@ -62,3 +62,5 @@ final moyennePeriodesProvider = FutureProvider<int>((ref) {
 final totalDepenseGeneraleProvider = FutureProvider<int>((ref) {
   return ref.watch(statsRepositoryProvider).getTotalDepenseGenerale();
 });
+
+final exportServiceProvider = Provider((ref) => ExportService());
