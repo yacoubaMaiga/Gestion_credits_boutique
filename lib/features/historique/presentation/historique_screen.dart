@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../periodes/models/periode.dart';
 import '../../periodes/presentation/providers/app_providers.dart';
 import 'periode_detail_screen.dart';
@@ -21,11 +22,14 @@ class HistoriqueScreen extends ConsumerWidget {
         error: (err, _) => Center(child: Text('Erreur : $err')),
         data: (periodes) {
           if (periodes.isEmpty) {
-            return const Center(child: Text('Aucune période payée pour l\'instant'));
+            return const Center(
+              child: Text('Aucune période payée pour l\'instant'),
+            );
           }
           return ListView.builder(
             itemCount: periodes.length,
-            itemBuilder: (context, index) => _PeriodeCard(periode: periodes[index]),
+            itemBuilder: (context, index) =>
+                _PeriodeCard(periode: periodes[index]),
           );
         },
       ),
@@ -40,12 +44,15 @@ class _PeriodeCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final montantAsync = ref.watch(montantTotalProvider(periode.id!));
-    final duree = periode.datePaiement!.difference(periode.dateDebut).inDays + 1;
+    final duree =
+        periode.datePaiement!.difference(periode.dateDebut).inDays + 1;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       child: ListTile(
-        title: Text('${_formatDate(periode.dateDebut)} → ${_formatDate(periode.datePaiement!)}'),
+        title: Text(
+          '${_formatDate(periode.dateDebut)} → ${_formatDate(periode.datePaiement!)}',
+        ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -58,17 +65,40 @@ class _PeriodeCard extends ConsumerWidget {
                 fontWeight: FontWeight.w600,
               ),
             ),
+            if (periode.montantPaye != null)
+              montantAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+                data: (total) => periode.montantPaye! < total
+                    ? Text(
+                        'Payé partiellement : ${periode.montantPaye} / $total FCFA',
+                        style: TextStyle(
+                          color: Colors.orange.shade800,
+                          fontSize: 12,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
           ],
         ),
         isThreeLine: true,
         trailing: montantAsync.when(
-          loading: () => const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+          loading: () => const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
           error: (_, _) => const Text('—'),
-          data: (montant) => Text('$montant FCFA', style: Theme.of(context).textTheme.titleMedium),
+          data: (montant) => Text(
+            '$montant FCFA',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
         ),
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => PeriodeDetailScreen(periode: periode)),
+          MaterialPageRoute(
+            builder: (_) => PeriodeDetailScreen(periode: periode),
+          ),
         ),
       ),
     );

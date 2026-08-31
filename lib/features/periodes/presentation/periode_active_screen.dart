@@ -61,29 +61,64 @@ class PeriodeActiveScreen extends ConsumerWidget {
     WidgetRef ref,
     int periodeId,
   ) async {
-    final confirme = await showDialog<bool>(
+    final montantTotal = await ref.read(montantTotalProvider(periodeId).future);
+    final montantController = TextEditingController(
+      text: montantTotal.toString(),
+    );
+
+    final montantPaye = await showDialog<int>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Marquer comme payée ?'),
-        content: const Text('Cette période sera déplacée dans l\'historique.'),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Marquer comme payée'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Montant total dû : $montantTotal FCFA'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: montantController,
+              decoration: const InputDecoration(
+                labelText: 'Montant réellement payé (FCFA)',
+              ),
+              keyboardType: TextInputType.number,
+            ),
+          ],
+        ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Annuler'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(context, true),
+            onPressed: () => Navigator.pop(
+              dialogContext,
+              int.tryParse(montantController.text),
+            ),
             child: const Text('Confirmer'),
           ),
         ],
       ),
     );
-    if (confirme != true) return;
 
-    await ref.read(periodeRepositoryProvider).marquerPayee(periodeId);
+    if (montantPaye == null) return;
+
+    await ref
+        .read(periodeRepositoryProvider)
+        .marquerPayee(periodeId, montantPaye);
     await NotificationService.instance.annulerRappels(periodeId);
     ref.invalidate(periodeActiveProvider);
     ref.invalidate(historiqueProvider);
+
+    if (montantPaye < montantTotal && context.mounted) {
+      final reste = montantTotal - montantPaye;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Reste de $reste FCFA — sera ajouté à la prochaine période',
+          ),
+        ),
+      );
+    }
   }
 }
 
@@ -128,16 +163,27 @@ class _PeriodeContenu extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.all(24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          child: Column(
             children: [
-              _StatBlock(label: 'Jour', valeur: '$joursEcoules'),
-              montantAsync.when(
-                loading: () => const CircularProgressIndicator(),
-                error: (_, _) => const Text('—'),
-                data: (montant) =>
-                    _StatBlock(label: 'Total', valeur: '$montant FCFA'),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  _StatBlock(label: 'Jour', valeur: '$joursEcoules'),
+                  montantAsync.when(
+                    loading: () => const CircularProgressIndicator(),
+                    error: (_, _) => const Text('—'),
+                    data: (montant) =>
+                        _StatBlock(label: 'Total', valeur: '$montant FCFA'),
+                  ),
+                ],
               ),
+              if (periode.resteReporte > 0) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'dont ${periode.resteReporte} FCFA reporté(s) de la période précédente',
+                  style: TextStyle(color: Colors.orange.shade800, fontSize: 12),
+                ),
+              ],
             ],
           ),
         ),
@@ -190,24 +236,38 @@ class _ListeGroupeeParDate extends StatelessWidget {
       itemBuilder: (context, index) {
         final cle = dates[index];
         final achatsDuJour = groupes[cle]!;
-        final sousTotal = achatsDuJour.fold<int>(0, (somme, a) => somme + a.total);
+        final sousTotal = achatsDuJour.fold<int>(
+          0,
+          (somme, a) => somme + a.total,
+        );
         final estAujourdHui = cle == aujourdHui;
 
         return ExpansionTile(
-          initiallyExpanded: estAujourdHui, // aujourd'hui = déroulé, le reste = replié
+          initiallyExpanded:
+              estAujourdHui, // aujourd'hui = déroulé, le reste = replié
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_formatDate(cle), style: Theme.of(context).textTheme.labelLarge),
-              Text('$sousTotal FCFA', style: Theme.of(context).textTheme.labelLarge),
+              Text(
+                _formatDate(cle),
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
+              Text(
+                '$sousTotal FCFA',
+                style: Theme.of(context).textTheme.labelLarge,
+              ),
             ],
           ),
           children: achatsDuJour
-              .map((achat) => ListTile(
-                    title: Text(achat.nomProduit),
-                    subtitle: Text('${_formatQuantite(achat.quantite)} x ${achat.prix} FCFA'),
-                    trailing: Text('${achat.total} FCFA'),
-                  ))
+              .map(
+                (achat) => ListTile(
+                  title: Text(achat.nomProduit),
+                  subtitle: Text(
+                    '${_formatQuantite(achat.quantite)} x ${achat.prix} FCFA',
+                  ),
+                  trailing: Text('${achat.total} FCFA'),
+                ),
+              )
               .toList(),
         );
       },
@@ -233,5 +293,6 @@ class _ListeGroupeeParDate extends StatelessWidget {
     return '${jours[date.weekday - 1]} ${date.day}/${date.month}';
   }
 
-  String _formatQuantite(double q) => q == q.roundToDouble() ? q.toInt().toString() : q.toString();
+  String _formatQuantite(double q) =>
+      q == q.roundToDouble() ? q.toInt().toString() : q.toString();
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+
 import '../../periodes/presentation/providers/app_providers.dart';
 
 class StatsScreen extends ConsumerWidget {
@@ -14,15 +15,15 @@ class StatsScreen extends ConsumerWidget {
         backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       ),
       body: ListView(
-  padding: const EdgeInsets.all(16),
-  children: const [
-    _ComparaisonMoyenne(),
-    SizedBox(height: 24),
-    _GraphiqueEvolution(),
-    SizedBox(height: 24),
-    _TopProduits(),
-  ],
-),
+        padding: const EdgeInsets.all(16),
+        children: const [
+          _ComparaisonMoyenne(),
+          SizedBox(height: 24),
+          _GraphiqueEvolution(),
+          SizedBox(height: 24),
+          _TopProduits(),
+        ],
+      ),
     );
   }
 }
@@ -50,7 +51,9 @@ class _ComparaisonMoyenne extends ConsumerWidget {
             loading: () => const SizedBox.shrink(),
             error: (_, _) => const SizedBox.shrink(),
             data: (moyenne) {
-              if (moyenne == 0) return const SizedBox.shrink(); // pas assez d'historique
+              if (moyenne == 0) {
+                return const SizedBox.shrink(); // pas assez d'historique
+              }
               final ecart = montantActuel - moyenne;
               final pourcentage = ((ecart / moyenne) * 100).round();
 
@@ -60,16 +63,24 @@ class _ComparaisonMoyenne extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Période en cours', style: Theme.of(context).textTheme.labelLarge),
+                      Text(
+                        'Période en cours',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
                       const SizedBox(height: 8),
-                      Text('$montantActuel FCFA', style: Theme.of(context).textTheme.headlineSmall),
+                      Text(
+                        '$montantActuel FCFA',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         pourcentage > 0
                             ? '$pourcentage% de plus que ta moyenne habituelle'
                             : '${pourcentage.abs()}% de moins que ta moyenne habituelle',
                         style: TextStyle(
-                          color: pourcentage > 0 ? Colors.orange.shade800 : Colors.green.shade700,
+                          color: pourcentage > 0
+                              ? Colors.orange.shade800
+                              : Colors.green.shade700,
                         ),
                       ),
                     ],
@@ -108,19 +119,43 @@ class _GraphiqueEvolution extends ConsumerWidget {
           );
         }).toList();
 
+        final maxY = donnees
+            .map((d) => (d['total'] as num).toDouble())
+            .reduce((a, b) => a > b ? a : b);
+        final intervalle = (maxY / 4)
+            .ceilToDouble(); // 4 graduations lisibles, pas plus
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Évolution des montants', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Évolution des montants',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             SizedBox(
               height: 200,
               child: BarChart(
                 BarChartData(
+                  maxY: maxY * 1.2, // marge en haut pour que la barre la plus haute ne touche pas le bord
                   barGroups: barres,
-                  titlesData: const FlTitlesData(
-                    leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40)),
-                    bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  titlesData: FlTitlesData(
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        interval: intervalle, // <- fixe l'espacement, plus de chevauchement
+                      ),
+                    ),
+                    bottomTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: const AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
                   ),
                 ),
               ),
@@ -143,34 +178,44 @@ class _TopProduits extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Produits les plus pris', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'Produits les plus pris',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         frequentsAsync.when(
           loading: () => const CircularProgressIndicator(),
           error: (err, _) => Text('Erreur : $err'),
           data: (produits) => Column(
             children: produits
-                .map((p) => ListTile(
-                      dense: true,
-                      title: Text(p['nom_produit'] as String),
-                      trailing: Text('${p['nb_achats']} fois'),
-                    ))
+                .map(
+                  (p) => ListTile(
+                    dense: true,
+                    title: Text(p['nom_produit'] as String),
+                    trailing: Text('${p['nb_achats']} fois'),
+                  ),
+                )
                 .toList(),
           ),
         ),
         const SizedBox(height: 24),
-        Text('Plus gros postes de dépense', style: Theme.of(context).textTheme.titleMedium),
+        Text(
+          'Plus gros postes de dépense',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 8),
         couteuxAsync.when(
           loading: () => const CircularProgressIndicator(),
           error: (err, _) => Text('Erreur : $err'),
           data: (produits) => Column(
             children: produits
-                .map((p) => ListTile(
-                      dense: true,
-                      title: Text(p['nom_produit'] as String),
-                      trailing: Text('${p['montant_total']} FCFA'),
-                    ))
+                .map(
+                  (p) => ListTile(
+                    dense: true,
+                    title: Text(p['nom_produit'] as String),
+                    trailing: Text('${p['montant_total']} FCFA'),
+                  ),
+                )
                 .toList(),
           ),
         ),

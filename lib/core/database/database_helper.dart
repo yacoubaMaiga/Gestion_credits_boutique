@@ -35,6 +35,9 @@ class DatabaseHelper {
         seuil_alerte_jours INTEGER NOT NULL DEFAULT 10,
         statut TEXT NOT NULL DEFAULT 'active',
         date_paiement TEXT,
+        montant_paye INTEGER,
+        reste_reporte INTEGER NOT NULL DEFAULT 0,
+        reste_applique INTEGER NOT NULL DEFAULT 0,
         note TEXT
       )
     ''');
